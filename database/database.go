@@ -18,6 +18,6 @@ func Connect() {
 		panic("failed to connect database")
 	}
 
-	db.AutoMigrate(&models.User{})
+	db.AutoMigrate(&models.User{}, &models.Account{})
 	Database = DbInstance{Db: db}
 }

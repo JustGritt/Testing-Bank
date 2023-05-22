@@ -28,8 +28,8 @@ func setupRoutes(app *fiber.App) {
 	app.Get("/swagger/*", swagger.HandlerDefault)
 
 	// Login route
-	app.Post("/login", routes.Login)
-	app.Post("/api/users", routes.CreateUser)
+	app.Post("/api/login", routes.Login)
+	app.Post("/api/register", routes.CreateUser)
 
 	app.Use(jwtware.New(jwtware.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
@@ -61,7 +61,6 @@ func setupRoutes(app *fiber.App) {
 	// DELETE routes
 	// =================
 	app.Delete("/api/users/:id", restricted, routes.DeleteUser)
-
 }
 
 // @title           Swagger Example API

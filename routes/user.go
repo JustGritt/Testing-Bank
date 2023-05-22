@@ -215,3 +215,5 @@ func DeleteUser(c *fiber.Ctx) error {
 		"message": "User deleted",
 	})
 }
+
+func CreateBan
