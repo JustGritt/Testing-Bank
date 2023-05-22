@@ -48,11 +48,16 @@ func setupRoutes(app *fiber.App) {
 	// =================
 	app.Get("/api/users", restricted, routes.GetUsers)
 	app.Get("/api/users/:id", restricted, routes.GetUser)
+	app.Get("/api/users/:id/accounts", restricted, routes.GetAccountsByUser)
+
 	// app.Get("/api/payments/user/:id", routes.GetPaymentsByUser)
 	// app.Get("/api/payments/product/:id", routes.GetPaymentsByProduct)
 
 	// POST routes
 	// =================
+	app.Post("/api/users/:id/account", restricted, routes.CreateAccount)
+	app.Post("/api/users/:id/account/debit", restricted, routes.Debit)
+	app.Post("/api/users/:id/account/credit", restricted, routes.Credit)
 
 	// PUT routes
 	// =================
@@ -61,6 +66,8 @@ func setupRoutes(app *fiber.App) {
 	// DELETE routes
 	// =================
 	app.Delete("/api/users/:id", restricted, routes.DeleteUser)
+	app.Delete("/api/users/:id/account", restricted, routes.DeleteAccount)
+	app.Delete("/api/users/:id/accounts", restricted, routes.DeleteAllAccounts)
 }
 
 // @title           Swagger Example API

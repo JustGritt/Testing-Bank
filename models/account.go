@@ -7,4 +7,5 @@ type Account struct {
 	IBAN      string    `json:"iban"`
 	Balance   uint      `json:"balance"`
 	CreatedAt time.Time `json:"created_at"`
+	UserID    uint      `json:"user_id"`
 }

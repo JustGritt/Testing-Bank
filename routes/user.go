@@ -9,10 +9,11 @@ import (
 )
 
 type User struct {
-	ID        uint   `json:"id"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Password  string `json:"password"`
+	ID             uint   `json:"id"`
+	FirstName      string `json:"first_name"`
+	LastName       string `json:"last_name"`
+	Password       string `json:"password"`
+	NumberAccounts int    `json:"number_accounts"`
 }
 
 func validToken(t *jwt.Token, id int) bool {
@@ -24,9 +25,10 @@ func validToken(t *jwt.Token, id int) bool {
 
 func CreateResponseUser(user models.User) User {
 	return User{
-		ID:        user.ID,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
+		ID:             user.ID,
+		FirstName:      user.FirstName,
+		LastName:       user.LastName,
+		NumberAccounts: len(user.Accounts),
 	}
 }
 
@@ -215,5 +217,3 @@ func DeleteUser(c *fiber.Ctx) error {
 		"message": "User deleted",
 	})
 }
-
-func CreateBan

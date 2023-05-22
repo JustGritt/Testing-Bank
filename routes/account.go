@@ -1,110 +1,130 @@
 package routes
 
 import (
+	"strconv"
+
 	"github.com/JustGritt/go-grpc/database"
 	"github.com/JustGritt/go-grpc/models"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v4"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type Account struct {
-	ID      uint   `json:"id"`
-	IBAN    string `json:"iban"`
-	Balance uint   `json:"balance"`
+	ID             uint   `json:"id"`
+	IBAN           string `json:"iban"`
+	Balance        uint   `json:"balance"`
+	NumberAccounts int    `json:"number_accounts"`
 }
 
-func CreateResponseAccount(account models.Account) Account {
+type Transaction struct {
+	IBAN     string `json:"iban"`
+	Balance  uint   `json:"balance"`
+	rejected uint
+}
+
+func CreateResponseAccount(account models.Account, user models.User) Account {
 	return Account{
-		ID:      account.ID,
-		IBAN:    account.IBAN,
-		Balance: account.Balance,
+		ID:             account.ID,
+		IBAN:           account.IBAN,
+		Balance:        account.Balance,
+		NumberAccounts: user.NumberAccounts,
 	}
 }
 
-// Create account godoc
-// @Summary Create account
-// @Description Create account
-// @Tags accounts
-// @Accept  json
-// @Produce  json
-// @Param account body Account true "Account"
-// @Success 201 {object} Account
-// @Failure 400 {string} string "Invalid request"
-// @Failure 500 {string} string "Error encrypting password"
-// @Router /api/accounts [post]
 func CreateAccount(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var user models.User
+	database.Database.Db.First(&user, id)
+
 	var account models.Account
+	account.UserID = uint(user.ID)
+	account.Balance = 0
+	account.IBAN = "NL" + strconv.Itoa(int(user.ID)) + "ING"
 
-	// Get user from JWT
-	user := c.Locals("user").(*jwt.Token)
-	claims := user.Claims.(jwt.MapClaims)
-	userID := claims["id"].(float64)
-	account.UserID = uint(userID)
+	user.NumberAccounts = int(user.NumberAccounts + 1)
 
-	if err := c.BodyParser(&account); err != nil {
-		return c.Status(400).JSON(err.Error())
-	}
+	if user.NumberAccounts > 5 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "You can't have more than 5 accounts",
+		})
 
-	if account.UserID == "" {
-		return c.Status(400).JSON("Account name is required")
-	}
-
-	var existingAccount models.Account
-	database.Database.Db.Where("name = ?", account.IBAN).First(&existingAccount)
-	if existingAccount.ID != 0 {
-		return c.Status(400).JSON("Account name already taken")
 	}
 
 	database.Database.Db.Create(&account)
-	responseAccount := CreateResponseAccount(account)
-	return c.Status(200).JSON(responseAccount)
+
+	database.Database.Db.Save(&user)
+
+	return c.Status(201).JSON(CreateResponseAccount(account, user))
+
 }
 
-func GetAccountId(id int, account *models.Account) error {
-	database.Database.Db.Find(&account, id)
-	if account.ID == 0 {
-		return fiber.NewError(404, "Account not found")
+func GetAccountsByUser(c *fiber.Ctx) error {
+	id, _ := strconv.Atoi(c.Params("id"))
+
+	var user models.User
+	database.Database.Db.Preload("Accounts").First(&user, id)
+	var accounts []Account
+
+	for _, account := range user.Accounts {
+		accounts = append(accounts, CreateResponseAccount(account, user))
 	}
 
-	return nil
+	return c.JSON(accounts)
+
 }
 
-// Get accounts godoc
-// @Summary Get accounts
-// @Description Get accounts
-// @Tags accounts
-// @Accept  json
-// @Produce  json
-// @Success 200 {object} Account
-// @Failure 404 {string} string "Account not found"
-// @Router /api/accounts [get]
-func GetAccounts(c *fiber.Ctx) error {
-	var accounts []models.Account
-	database.Database.Db.Find(&accounts)
+func DeleteAccount(c *fiber.Ctx) error {
+	iban := c.Params("iban")
 
-	var responseAccounts []Account
-	for _, account := range accounts {
-		responseAccounts = append(responseAccounts, CreateResponseAccount(account))
-	}
-
-	return c.Status(200).JSON(responseAccounts)
-}
-
-// Get account godoc
-// @Summary Get account
-// @Description Get account
-// @Tags accounts
-// @Accept  json
-// @Produce  json
-// @Param id path int true "Account ID"
-// @Success 200 {object} Account
-// @Failure 404 {string} string "Account not found"
-// @Router /api/accounts/{id} [get]
-func GetAccount(c *fiber.Ctx) error {
-	id := c.Params("id")
 	var account models.Account
-	database.Database.Db.Find(&account, id)
+	database.Database.Db.Where("IBAN = ?", iban).Delete(&account)
+	if account.ID == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "Account not found",
+		})
+	}
+
+	return c.SendString("Account deleted")
+}
+
+func DeleteAllAccounts(c *fiber.Ctx) error {
+	//delete all accounts for the user with id
+	id := c.Params("id")
+
+	var user models.User
+	database.Database.Db.First(&user, id)
+
+	var accounts []models.Account
+	database.Database.Db.Where("user_id = ?", id).Delete(&accounts)
+
+	user.NumberAccounts = 0
+	database.Database.Db.Save(&user)
+
+	return c.SendString("All accounts deleted")
+
+}
+
+func Debit(c *fiber.Ctx) error {
+
+	type TransactionInfo struct {
+		IBAN  string `json:"iban"`
+		Debit int    `json:"debit"`
+	}
+
+	var transactionInfo TransactionInfo
+
+	if err := c.BodyParser(&transactionInfo); err != nil {
+		return c.Status(500).JSON(err.Error())
+	}
+
+	debitInt := transactionInfo.Debit
+	if debitInt < 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Debit can't be negative",
+		})
+	}
+
+	var account models.Account
+	database.Database.Db.Where("iban = ?", transactionInfo.IBAN).First(&account)
 
 	if account.ID == 0 {
 		return c.Status(404).JSON(fiber.Map{
@@ -112,103 +132,64 @@ func GetAccount(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(200).JSON(CreateResponseAccount(account))
-}
-
-// Update account godoc
-// @Summary Update account
-// @Description Update account
-// @Tags accounts
-// @Accept  json
-// @Produce  json
-// @Param id path int true "Account ID"
-// @Param account body Account true "Account"
-// @Success 200 {object} Account
-// @Failure 400 {string} string "Invalid request"
-// @Failure 404 {string} string "Account not found"
-// @Failure 500 {string} string "Error encrypting password"
-// @Router /api/accounts/{id} [put]
-func UpdateAccount(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-
-	var account models.Account
-
-	if err != nil {
-		return c.Status(400).JSON("Please ensure that :id is an integer")
-	}
-
-	err = GetAccountId(id, &account)
-
-	token := c.Locals("account").(*jwt.Token)
-
-	if !validToken(token, id) {
-		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "Invalid token id", "data": nil})
-	}
-
-	if err != nil {
-		return c.Status(400).JSON(err.Error())
-	}
-
-	type UpdateAccount struct {
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Password  string `json:"password"`
-	}
-
-	var updateData UpdateAccount
-
-	if err := c.BodyParser(&updateData); err != nil {
-		return c.Status(500).JSON(err.Error())
-	}
-
-	// encrypt password with bcrypt
-	pass, err := bcrypt.GenerateFromPassword([]byte(updateData.Password), 14)
-	if err != nil {
-		return c.Status(500).JSON(fiber.Map{
-			"message": "Error encrypting password",
+	//check account balance and debit if the balance is 0 or less than the debit return an error
+	if account.Balance < uint(debitInt) || account.Balance == 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Not enough balance",
 		})
 	}
 
-	account.FirstName = updateData.FirstName
-	account.LastName = updateData.LastName
-	account.Password = string(pass)
+	account.Balance = account.Balance - uint(debitInt)
+	database.Database.Db.Save(&account)
+
+	return c.Status(200).JSON(account)
+}
+
+func Credit(c *fiber.Ctx) error {
+	type TransactionInfo struct {
+		IBAN   string `json:"iban"`
+		Credit int    `json:"debit"`
+	}
+
+	var transactionInfo TransactionInfo
+
+	if err := c.BodyParser(&transactionInfo); err != nil {
+		return c.Status(500).JSON(err.Error())
+	}
+
+	creditInt := transactionInfo.Credit
+
+	if creditInt < 0 {
+		return c.Status(400).JSON(fiber.Map{
+			"message": "Credit can't be negative",
+		})
+	}
+
+	var account models.Account
+	database.Database.Db.Where("iban = ?", transactionInfo.IBAN).First(&account)
+
+	if account.ID == 0 {
+		return c.Status(404).JSON(fiber.Map{
+			"message": "Account not found",
+		})
+	}
+
+	account.Balance = account.Balance + uint(creditInt)
+
+	var rejected = 0
+	if account.Balance > 1000 {
+		tmp := account.Balance
+		rejected = int(account.Balance) - 1000
+		account.Balance = tmp - uint(rejected)
+	}
 
 	database.Database.Db.Save(&account)
 
-	responseAccount := CreateResponseAccount(account)
-
+	responseAccount := Transaction{
+		IBAN:     account.IBAN,
+		Balance:  account.Balance,
+		rejected: uint(rejected),
+	}
+	//return somethin like that Account {iban: "fadf", balance: 1000, rejected: 100}
 	return c.Status(200).JSON(responseAccount)
-}
-
-// Delete account godoc
-// @Summary Delete account
-// @Description Delete account
-// @Tags accounts
-// @Accept  json
-// @Produce  json
-// @Param id path int true "Account ID"
-// @Success 200 {string} string "Account deleted"
-// @Failure 400 {string} string "Invalid request"
-// @Failure 404 {string} string "Account not found"
-// @Router /api/accounts/{id} [delete]
-func DeleteAccount(c *fiber.Ctx) error {
-	id, err := c.ParamsInt("id")
-
-	var account models.Account
-
-	if err != nil {
-		return c.Status(400).JSON("Please ensure that :id is an integer")
-	}
-
-	err = GetAccountId(id, &account)
-
-	if err != nil {
-		return c.Status(400).JSON(err.Error())
-	}
-
-	database.Database.Db.Delete(&account)
-
-	return c.Status(200).JSON(fiber.Map{
-		"message": "Account deleted",
-	})
 }
