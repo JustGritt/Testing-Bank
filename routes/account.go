@@ -190,6 +190,6 @@ func Credit(c *fiber.Ctx) error {
 		Balance:  account.Balance,
 		rejected: uint(rejected),
 	}
-	//return somethin like that Account {iban: "fadf", balance: 1000, rejected: 100}
-	return c.Status(200).JSON(responseAccount)
+
+	return c.Status(200).JSON(&responseAccount)
 }
