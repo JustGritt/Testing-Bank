@@ -1,49 +1,69 @@
-package routes
+package routes_test
 
 import (
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/JustGritt/go-grpc/database"
+	"github.com/JustGritt/go-grpc/routes"
 	"github.com/gofiber/fiber/v2"
-	"github.com/stretchr/testify/assert" // add Testify package
+	"github.com/stretchr/testify/assert"
 )
 
-func TestHelloRoute(t *testing.T) {
-	// Define a structure for specifying input and output data
-	// of a single test case
-	tests := []struct {
-		description  string // description of the test case
-		route        string // route path to test
-		expectedCode int    // expected HTTP status code
-	}{
-		// First test case
-		{
-			description:  "get HTTP status 200",
-			route:        "/api",
-			expectedCode: 200,
-		},
-	}
+func TestCreateAccountHandler(t *testing.T) {
 
-	// Define Fiber app.
+	// Create a new Fiber app
 	app := fiber.New()
 
-	// Create route with GET method for test
-	app.Get("/api", func(c *fiber.Ctx) error {
-		// Return simple string as response
-		return c.SendString("Hello, World!")
-	})
+	database.ConnectTest()
 
-	// Iterate through test single test cases
-	for _, test := range tests {
-		// Create a new http request with the route from the test case
-		req := httptest.NewRequest("GET", test.route, nil)
+	// Define the test route
+	app.Post("/api/users/:id/account", routes.CreateAccount)
 
-		// Perform the request plain with the app,
-		// the second argument is a request latency
-		// (set to -1 for no latency)
-		resp, _ := app.Test(req, 1)
+	// Create a test request for the specific user's account
+	req := httptest.NewRequest(http.MethodPost, "/api/users/1/account", nil)
 
-		// Verify, if the status code is as expected
-		assert.Equalf(t, test.expectedCode, resp.StatusCode, test.description)
+	// Create a response recorder to capture the response
+	resp, err := app.Test(req, -1)
+	if err != nil {
+		t.Fatalf("failed to perform request: %v", err)
 	}
+
+	// Assert the response status code, body, or any other expected behavior
+	assert.Equal(t, http.StatusCreated, resp.StatusCode)
+
+	err = database.Database.Db.Migrator().DropTable("accounts")
+	if err != nil {
+		t.Fatalf("failed to delete test database: %v", err)
+	}
+
+	err = database.Database.Db.Migrator().DropTable("users")
+	if err != nil {
+		t.Fatalf("failed to delete test database: %v", err)
+	}
+
+}
+
+func TestCreateMaxAccountHandler(t *testing.T) {
+
+	// Create a new Fiber app
+	app := fiber.New()
+
+	database.ConnectTest()
+
+	// Define the test route
+	app.Post("/api/users/:id/account", routes.CreateAccount)
+
+	//create 6 user
+	for i := 0; i < 4; i++ {
+		req := httptest.NewRequest(http.MethodPost, "/api/users/1/account", nil)
+		// Create a response recorder to capture the response
+		resp, err := app.Test(req, -1)
+		if err != nil {
+			t.Fatalf("failed to perform request: %v", err)
+		}
+	}
+
+	assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 }
