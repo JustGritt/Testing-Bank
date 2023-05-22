@@ -1,0 +1,435 @@
+basePath: /
+definitions:
+  routes.Payment:
+    properties:
+      amount:
+        type: integer
+      id:
+        type: integer
+      product_id:
+        type: integer
+    type: object
+  routes.Product:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      price:
+        type: integer
+    type: object
+  routes.User:
+    properties:
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      password:
+        type: string
+    type: object
+host: localhost:3000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: This is a sample server celler server.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Swagger Example API
+  version: "1.0"
+paths:
+  /api/payments:
+    get:
+      consumes:
+      - application/json
+      description: Get all payments
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/routes.Payment'
+            type: array
+        "400":
+          description: Payment not found
+          schema:
+            type: string
+      summary: Get all payments
+      tags:
+      - payments
+    post:
+      consumes:
+      - application/json
+      description: Create a new payment
+      parameters:
+      - description: Payment
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Payment'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Payment'
+        "400":
+          description: Something went wrong
+          schema:
+            type: string
+      summary: Create a new payment
+      tags:
+      - payments
+  /api/payments/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete the payment with the given id
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Payment'
+        "400":
+          description: Payment not found
+          schema:
+            type: string
+      summary: Delete the payment with the given id
+      tags:
+      - payments
+    get:
+      consumes:
+      - application/json
+      description: Get payment by id
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Payment'
+        "400":
+          description: Payment not found
+          schema:
+            type: string
+      summary: Get payment by id
+      tags:
+      - payments
+    put:
+      consumes:
+      - application/json
+      description: Update the payment with the given id
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Payment
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Payment'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Payment'
+        "400":
+          description: Payment not found
+          schema:
+            type: string
+      summary: Update the payment with the given id
+      tags:
+      - payments
+  /api/products:
+    get:
+      consumes:
+      - application/json
+      description: Get all products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/routes.Product'
+            type: array
+        "400":
+          description: Product not found
+          schema:
+            type: string
+      summary: Get all products
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Create product
+      parameters:
+      - description: Product
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Product'
+        "400":
+          description: Product name already taken
+          schema:
+            type: string
+      summary: Create product
+      tags:
+      - products
+  /api/products/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Product deleted
+          schema:
+            type: string
+        "400":
+          description: Product not found
+          schema:
+            type: string
+      summary: Delete product
+      tags:
+      - products
+    get:
+      consumes:
+      - application/json
+      description: Get product by id
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Product'
+        "400":
+          description: Product not found
+          schema:
+            type: string
+      summary: Get product by id
+      tags:
+      - products
+    put:
+      consumes:
+      - application/json
+      description: Update product
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product
+        in: body
+        name: product
+        required: true
+        schema:
+          $ref: '#/definitions/routes.Product'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.Product'
+        "400":
+          description: Product name already taken
+          schema:
+            type: string
+      summary: Update product
+      tags:
+      - products
+  /api/users:
+    get:
+      consumes:
+      - application/json
+      description: Get users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.User'
+        "404":
+          description: User not found
+          schema:
+            type: string
+      summary: Get users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create user
+      parameters:
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/routes.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/routes.User'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Error encrypting password
+          schema:
+            type: string
+      summary: Create user
+      tags:
+      - users
+  /api/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User deleted
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+      summary: Delete user
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Get user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.User'
+        "404":
+          description: User not found
+          schema:
+            type: string
+      summary: Get user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: User
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/routes.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/routes.User'
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Error encrypting password
+          schema:
+            type: string
+      summary: Update user
+      tags:
+      - users
+swagger: "2.0"
