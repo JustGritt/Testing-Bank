@@ -29,7 +29,6 @@ func setupRoutes(app *fiber.App) {
 
 	// Login route
 	app.Post("/login", routes.Login)
-	app.Get("/api/stream", routes.GetStream)
 	app.Post("/api/users", routes.CreateUser)
 
 	app.Use(jwtware.New(jwtware.Config{
@@ -49,29 +48,19 @@ func setupRoutes(app *fiber.App) {
 	// =================
 	app.Get("/api/users", restricted, routes.GetUsers)
 	app.Get("/api/users/:id", restricted, routes.GetUser)
-	app.Get("/api/products", restricted, routes.GetProducts)
-	app.Get("/api/products/:id", restricted, routes.GetProduct)
-	app.Get("/api/payments", restricted, routes.GetPayments)
-	app.Get("/api/payments/:id", restricted, routes.GetPayment)
 	// app.Get("/api/payments/user/:id", routes.GetPaymentsByUser)
 	// app.Get("/api/payments/product/:id", routes.GetPaymentsByProduct)
 
 	// POST routes
 	// =================
-	app.Post("/api/products", restricted, routes.CreateProduct)
-	app.Post("/api/payments", restricted, routes.CreatePayment)
 
 	// PUT routes
 	// =================
 	app.Put("/api/users/:id", restricted, routes.UpdateUser)
-	app.Put("/api/products/:id", restricted, routes.UpdateProduct)
-	app.Put("/api/payments/:id", restricted, routes.UpdatePayment)
 
 	// DELETE routes
 	// =================
 	app.Delete("/api/users/:id", restricted, routes.DeleteUser)
-	app.Delete("/api/products/:id", restricted, routes.DeleteProduct)
-	app.Delete("/api/payments/:id", restricted, routes.DeletePayment)
 
 }
 
